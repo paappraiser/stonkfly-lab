@@ -65,9 +65,9 @@ class LiveTape:
 
 
 class ReplayTape:
-    def __init__(self, product: str = "BTC-USD", seed: int = 7):
+    def __init__(self, product: str = "BTC-USD", rng_seed: int = 7):
         self.product = product
-        self.seed = seed
+        self.rng_seed = rng_seed
         self.closes: list[float] = []
         self.i = 1
 
@@ -78,7 +78,7 @@ class ReplayTape:
             closes = [float(row[4]) for row in sorted(raw, key=lambda r: r[0])]
             self.closes = closes[-300:] or [100.0]
         except Exception:
-            rng = random.Random(self.seed)
+            rng = random.Random(self.rng_seed)
             price = 100.0
             self.closes = [price]
             for _ in range(300):
