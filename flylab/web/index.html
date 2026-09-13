@@ -31,16 +31,16 @@
   <p class="ticker" id="ticker">waiting for the first sniff of the tape ░░░</p>
   <section class="hero">
     <div class="card equity">
-      <p class="label">Paper pile <span class="hint">cash + mark-to-mid inventory. Not real money.</span></p>
+      <p class="label">Paper pile <span class="hint">cash + mark-to-mid. Not real money.</span></p>
       <p class="big" id="equity">$100.00</p>
       <p class="sub" id="book">cash 100 · qty 0</p>
       <p class="sub" id="pnl">P&amp;L vs start —</p>
       <canvas id="curve" width="640" height="180"></canvas>
     </div>
     <div class="card frame">
-      <p class="label">Spectator eyeball <span class="hint">pretty picture. The brain does not trade off this PNG.</span></p>
+      <p class="label">Spectator eyeball <span class="hint">the brain does not trade off this PNG</span></p>
       <img id="frame" alt="motion pane" />
-      <p class="sub" id="frame-note">looming disc = |last return|. ribbon = recent mids.</p>
+      <p class="sub">looming disc = |last return|. ribbon = recent mids.</p>
     </div>
   </section>
   <section class="grid four">
@@ -54,23 +54,40 @@
       <p class="label">Odor they actually smelled</p>
       <p class="mono" id="odor">—</p>
       <p class="sub" id="labels">—</p>
-      <p class="hint tight">move · vol · inventory · partner’s last yell</p>
     </div>
     <div class="card">
       <p class="label">Do they agree?</p>
       <p class="big" id="agree">—</p>
       <p class="sub" id="agree-stats">—</p>
-      <p class="hint tight">agree-or-sit: no matching yell, no order.</p>
     </div>
     <div class="card">
       <p class="label">Stage 0 report card</p>
       <p class="big" id="acc">n/a</p>
       <p class="sub" id="target">planted target —</p>
-      <p class="hint tight">If this stays near 50%, the wire is still spaghetti.</p>
+    </div>
+  </section>
+  <section class="split sense">
+    <div class="card">
+      <p class="label">Antennae — what it is smelling <span class="hint">not the chart. Four glomerulus bundles.</span></p>
+      <p class="mono" id="odor-name">—</p>
+      <div id="glomeruli" class="glomeruli"></div>
+      <canvas id="pn-bars" width="640" height="90"></canvas>
+      <p class="sub">each bar is a projection-neuron channel. Lit bars = this tick’s odor.</p>
+      <div id="odor-tape" class="odor-tape"></div>
+    </div>
+    <div class="card">
+      <p class="label">Mushroom body — what it is learning</p>
+      <p class="sub" id="learn-verdict">waiting for a sniff…</p>
+      <div id="memory" class="memory"></div>
+      <p class="hint tight">Green shift = BUY memory up. Pink = SELL memory up. Flat = frozen or no dopamine.</p>
     </div>
   </section>
   <section class="card">
-    <p class="label">The colony <span class="hint">each fly has different random KC wiring. Score = buy MBONs − sell MBONs.</span></p>
+    <p class="label">Is it learning? / how to improve memory</p>
+    <ul class="tips" id="tips"><li>Stage 0 twins first. If plastic cannot beat frozen, do not blame BTC.</li></ul>
+  </section>
+  <section class="card">
+    <p class="label">The colony</p>
     <div id="flies" class="flies"></div>
   </section>
   <section class="split">
@@ -79,27 +96,21 @@
       <ol class="steps">
         <li>Sniff a virtual odor built from return, vol, inventory, partner.</li>
         <li>Sparse Kenyon cells fire (~8%).</li>
-        <li>Mushroom-body output neurons vote BUY / SELL / HOLD.</li>
-        <li>If two flies, they only trade when the votes match.</li>
+        <li>MBONs vote BUY / SELL / HOLD.</li>
+        <li>Colony combines votes.</li>
         <li>Next tick, delayed dopamine grades that last action.</li>
       </ol>
     </div>
     <div class="card glossary">
       <p class="label">Field guide</p>
       <dl>
-        <dt>odor</dt><dd>The conditioned stimulus. Not a candlestick. Four factors glued into one smell.</dd>
-        <dt>sparsity</dt><dd>Fraction of Kenyon cells lit. Should stay small. A flood means the odor code collapsed.</dd>
-        <dt>drift</dt><dd>How far KC→MBON weights have wandered from birth. Zero on a frozen twin.</dd>
-        <dt>agreement</dt><dd>Both flies yelled the same side. Disagreement becomes HOLD on purpose.</dd>
-        <dt>halt</dt><dd>$20 hole or daily loss cap. Default flatten-on-halt so the bag does not sit overnight.</dd>
-        <dt>stage 0</dt><dd>Planted A→BUY, B→SELL world. If plastic cannot beat frozen here, BTC is a costume.</dd>
+        <dt>odor</dt><dd>Conditioned stimulus. Not a candlestick.</dd>
+        <dt>sparsity</dt><dd>Fraction of KCs lit. A flood means the code collapsed.</dd>
+        <dt>drift</dt><dd>How far KC→MBON weights moved from birth.</dd>
       </dl>
     </div>
   </section>
-  <footer>
-    Two bugs. One paper book. Zero licenses. Compact mushroom body, not MaleCNS.
-    Inspired by nftechie/stonkfly — this lab is the joke with the learning wire actually plugged in.
-  </footer>
+  <footer>Two bugs. One paper book. Compact mushroom body, not MaleCNS.</footer>
   <script src="/app.js"></script>
 </body>
 </html>
