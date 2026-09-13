@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stonkfly Lab</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header>
+    <div>
+      <p class="eyebrow">STONKFLY LAB</p>
+      <h1 id="title">waiting for first tick…</h1>
+    </div>
+    <div class="pills">
+      <span id="world" class="pill">—</span>
+      <span id="colony" class="pill">—</span>
+      <span id="halt" class="pill">running</span>
+    </div>
+  </header>
+  <section class="hero">
+    <div class="card equity">
+      <p class="label">Equity</p>
+      <p class="big" id="equity">$100.00</p>
+      <p class="sub" id="book">cash 100 · qty 0</p>
+      <canvas id="curve" width="640" height="180"></canvas>
+    </div>
+    <div class="card frame">
+      <p class="label">Fly eye / motion pane</p>
+      <img id="frame" alt="fly visual frame" />
+    </div>
+  </section>
+  <section class="grid">
+    <div class="card"><p class="label">Joint action</p><p class="big" id="joint">HOLD</p><p class="sub" id="reason">—</p></div>
+    <div class="card"><p class="label">Odor</p><p class="mono" id="odor">—</p><p class="sub" id="labels">—</p></div>
+    <div class="card"><p class="label">Agreement</p><p class="big" id="agree">—</p><p class="sub" id="agree-stats">—</p></div>
+    <div class="card"><p class="label">Stage 0 accuracy</p><p class="big" id="acc">n/a</p><p class="sub" id="target">planted target —</p></div>
+  </section>
+  <section class="card">
+    <p class="label">Colony</p>
+    <div id="flies" class="flies"></div>
+  </section>
+  <footer>Paper only. Compact mushroom body, not the 166k MaleCNS graph.</footer>
+  <script src="/app.js"></script>
+</body>
+</html>
