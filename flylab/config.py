@@ -47,6 +47,7 @@ class Settings:
     dashboard_port: int = 7474
     steps: int = 0
     fast: bool = False
+    load_memory: str = ""
 
     def signature(self) -> dict[str, Any]:
         return asdict(self)
