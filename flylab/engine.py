@@ -11,7 +11,7 @@ from .market import FixtureTape, LiveTape, Quote
 from .reinforcement import grade
 from .risk import Guard
 from .vision import render_ppm
-from .worlds import Stage0World
+from .worlds import RuleWorld, Stage0World
 
 
 class Engine:
@@ -21,7 +21,12 @@ class Engine:
         self.colony = Colony(settings)
         self.broker = PaperBroker.load(self.run_dir / "ledger.json", settings.starting_cash, settings.fee_bps)
         self.guard = Guard(settings, self.run_dir)
-        self.world = Stage0World(settings.seed) if settings.world == "stage0" else None
+        if settings.world == "stage0":
+            self.world = Stage0World(settings.seed)
+        elif settings.world == "rule":
+            self.world = RuleWorld(settings.seed)
+        else:
+            self.world = None
         self.tape: LiveTape | FixtureTape = LiveTape(settings.product) if settings.world == "market" else FixtureTape(seed=settings.seed)
         self.pending = None
         self.step_i = 0
@@ -55,6 +60,12 @@ class Engine:
             ret, vol, pos = quote.ret, quote.vol, self.broker.qty
         if self.pending and not s.frozen:
             valence = self._settle(quote)
+            action = str(self.pending.get("action", "HOLD"))
+            if self.world:
+                if action == "SELL":
+                    valence = -valence
+                elif action not in {"BUY", "SELL"}:
+                    valence = 0.0
             if valence != 0:
                 self.colony.reinforce_all(self.pending["elig"], valence)
             self.pending = None
@@ -70,7 +81,7 @@ class Engine:
                 self.metrics["correct_stage0"] += 1
             reason = "stage0"
             executed = proposed
-            self.broker.cash += self.world.outcome(proposed)
+            self.broker.cash += self.world.outcome(proposed, target)
             equity_after = self.broker.equity(quote.mid)
         else:
             decision = self.guard.check(self.broker, quote, proposed)
@@ -121,21 +132,17 @@ class Engine:
         self.events.append(event)
         self.events = self.events[-400:]
         self._write_state(event)
-        self.broker.save()
+        try:
+            self.broker.save()
+        except OSError:
+            pass
         self.step_i += 1
         return event
 
     def _settle(self, quote: Quote) -> float:
         pending = self.pending or {}
         if self.world:
-            target, action = pending.get("target"), pending.get("action")
-            if not target:
-                return 0.0
-            if action == target:
-                return 0.8
-            if action == "HOLD":
-                return 0.0
-            return -0.8
+            return self.world.outcome(str(pending.get("action", "HOLD")), pending.get("target"))
         s = self.settings
         equity_now = self.broker.equity(quote.mid)
         return grade(
