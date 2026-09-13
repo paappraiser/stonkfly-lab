@@ -25,3 +25,15 @@ def test_plastic_beats_frozen_on_stage0(tmp_path):
     f = frozen.metrics["correct_stage0"] / frozen.metrics["stage0_decisions"]
     assert p > 0.7
     assert p > f + 0.08
+
+
+def test_plastic_beats_frozen_on_rule_world(tmp_path):
+    common = dict(world="rule", colony="solo", n_flies=1, steps=280, fast=True, seed=11)
+    plastic = Engine(Settings(out=str(tmp_path / "plastic"), frozen=False, **common))
+    frozen = Engine(Settings(out=str(tmp_path / "frozen"), frozen=True, **common))
+    plastic.run()
+    frozen.run()
+    p = plastic.metrics["correct_stage0"] / plastic.metrics["stage0_decisions"]
+    f = frozen.metrics["correct_stage0"] / frozen.metrics["stage0_decisions"]
+    assert p > 0.62
+    assert p > f + 0.05

@@ -7,8 +7,6 @@ from typing import Any
 
 @dataclass
 class Settings:
-    """All knobs. Defaults are for a laptop paper experiment, not live Coinbase orders."""
-
     product: str = "BTC-USD"
     starting_cash: float = 100.0
     order_notional: float = 10.0
@@ -19,7 +17,6 @@ class Settings:
     flatten_on_halt: bool = True
     interval_seconds: float = 15.0
     max_quote_age: float = 30.0
-
     n_kc: int = 800
     n_pn: int = 32
     kc_inputs: int = 6
@@ -33,11 +30,9 @@ class Settings:
     eligibility_decay: float = 0.25
     decoder_threshold: float = 0.02
     decoder_hysteresis: float = 0.01
-
     n_flies: int = 2
     colony: str = "agree"
     partner_channel: bool = True
-
     world: str = "market"
     horizon_steps: int = 4
     deadband: float = 0.02
@@ -45,7 +40,6 @@ class Settings:
     proportional_dopamine: bool = True
     shuffle_reward: bool = False
     frozen: bool = False
-
     seed: int = 7
     out: str = "runs/paper"
     dashboard_host: str = "127.0.0.1"
