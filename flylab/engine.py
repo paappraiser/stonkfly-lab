@@ -28,7 +28,7 @@ class Engine:
         else:
             self.world = None
         if settings.world == "market":
-            self.tape: LiveTape | FixtureTape | ReplayTape = LiveTape(settings.product)
+            self.tape = LiveTape(settings.product)
         elif settings.world == "replay":
             self.tape = ReplayTape(settings.product, settings.seed)
         else:
@@ -36,6 +36,8 @@ class Engine:
         self.pending = None
         self.step_i = 0
         self.events = []
+        self.odor_log = []
+        self.last_valence = 0.0
         self.alive = True
         self.lock = threading.Lock()
         self.metrics = {"agreements": 0, "disagreements": 0, "correct_stage0": 0, "stage0_decisions": 0, "fills": 0}
@@ -71,6 +73,7 @@ class Engine:
                     valence = -valence
                 elif action not in {"BUY", "SELL"}:
                     valence = 0.0
+            self.last_valence = float(valence)
             if valence != 0:
                 self.colony.reinforce_all(self.pending["elig"], valence)
             self.pending = None
@@ -105,20 +108,30 @@ class Engine:
             render_ppm(self.run_dir / "latest.ppm", quote, odor.name, executed, equity_after)
         except OSError:
             pass
+        flies = []
+        for i, st in enumerate(step.flies):
+            row = {"name": st.name, "score": st.score, "sparsity": st.sparsity, "weight_drift": st.weight_drift}
+            row.update(self.colony.flies[i].dashboard())
+            flies.append(row)
         event = {
             "step": self.step_i, "ts": time.time(), "product": quote.product,
             "mid": quote.mid, "bid": quote.bid, "ask": quote.ask, "ret": ret, "vol": vol,
             "odor": odor.name, "labels": odor.labels,
+            "odor_vector": [round(float(x), 3) for x in odor.vector.tolist()],
+            "last_valence": self.last_valence,
             "proposals": [{"side": p.side, "score": p.score} for p in step.proposals],
             "joint": {"side": step.joint.side, "score": step.joint.score},
             "executed": executed, "reason": reason, "agreement": step.agreement, "banner": step.banner,
             "equity": equity_after, "cash": self.broker.cash, "qty": self.broker.qty, "fee": fee,
             "halted": self.broker.halted, "halt_reason": self.broker.halt_reason,
-            "flies": [{"name": st.name, "score": st.score, "sparsity": st.sparsity, "weight_drift": st.weight_drift} for st in step.flies],
+            "flies": flies,
             "metrics": dict(self.metrics), "stage0_target": target,
             "stage0_acc": (self.metrics["correct_stage0"] / self.metrics["stage0_decisions"] if self.metrics["stage0_decisions"] else None),
             "history": quote.history[-80:],
         }
+        self.odor_log.append({"step": self.step_i, "name": odor.name, "labels": odor.labels, "executed": executed, "target": target, "valence": self.last_valence})
+        self.odor_log = self.odor_log[-48:]
+        event["odor_log"] = list(self.odor_log)
         self.events.append(event)
         self.events = self.events[-400:]
         self._write_state(event)
