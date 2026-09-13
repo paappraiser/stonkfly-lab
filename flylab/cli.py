@@ -10,12 +10,13 @@ from .engine import Engine
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="flylab", description="Stonkfly Lab — two bugs, one paper book")
+    p = argparse.ArgumentParser(prog="flylab", description="Stonkfly Lab")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     def add_shared(sp: argparse.ArgumentParser) -> None:
-        sp.add_argument("--world", choices=["stage0", "rule", "market", "fixture"], default="stage0")
-        sp.add_argument("--colony", choices=["solo", "agree", "governor"], default="agree")
+        sp.add_argument("--world", choices=["stage0", "rule", "market", "fixture", "replay"], default="stage0")
+        sp.add_argument("--colony", choices=["solo", "agree", "soft", "governor"], default="agree")
+        sp.add_argument("--clone", action="store_true", help="copy fly-0 wiring onto the others")
         sp.add_argument("--flies", type=int, default=2)
         sp.add_argument("--product", default="BTC-USD")
         sp.add_argument("--steps", type=int, default=0)
@@ -41,6 +42,8 @@ def build_parser() -> argparse.ArgumentParser:
     twins.add_argument("--steps", type=int, default=200)
     school = sub.add_parser("school", help="curriculum: stage0 then rule-world twins")
     school.add_argument("--steps", type=int, default=200)
+    back = sub.add_parser("backtest", help="fast replay of candles or a fixture tape")
+    add_shared(back)
     return p
 
 
@@ -52,7 +55,7 @@ def settings_from(args: argparse.Namespace) -> Settings:
         n_flies=getattr(args, "flies", 2),
         product=getattr(args, "product", "BTC-USD"),
         steps=getattr(args, "steps", 0),
-        fast=bool(getattr(args, "fast", False) or world in {"stage0", "rule"}),
+        fast=bool(getattr(args, "fast", False) or world in {"stage0", "rule", "replay", "fixture"}),
         frozen=bool(getattr(args, "frozen", False)),
         shuffle_reward=bool(getattr(args, "shuffle_reward", False)),
         out=getattr(args, "out", "runs/paper"),
@@ -60,6 +63,7 @@ def settings_from(args: argparse.Namespace) -> Settings:
         fee_bps=getattr(args, "fee_bps", 8.0),
         dashboard_port=getattr(args, "port", 7474),
         seed=getattr(args, "seed", 7),
+        clone_weights=bool(getattr(args, "clone", False)),
     )
 
 
@@ -88,22 +92,8 @@ def _run(settings: Settings, dashboard: bool) -> Engine:
 
 def run_twins(world: str, steps: int) -> tuple[bool, dict]:
     results = {}
-    for name, frozen, shuffle in (
-        ("plastic", False, False),
-        ("frozen", True, False),
-        ("shuffled", False, True),
-    ):
-        s = Settings(
-            world=world,
-            colony="solo",
-            n_flies=1,
-            steps=steps,
-            fast=True,
-            frozen=frozen,
-            shuffle_reward=shuffle,
-            out=f"runs/twin-{world}-{name}",
-            seed=7,
-        )
+    for name, frozen, shuffle in (("plastic", False, False), ("frozen", True, False), ("shuffled", False, True)):
+        s = Settings(world=world, colony="solo", n_flies=1, steps=steps, fast=True, frozen=frozen, shuffle_reward=shuffle, out=f"runs/twin-{world}-{name}", seed=7)
         engine = Engine(s)
         engine.run()
         acc = engine.metrics["correct_stage0"] / max(engine.metrics["stage0_decisions"], 1)
@@ -141,16 +131,24 @@ def main(argv: list[str] | None = None) -> int:
         ok, _ = run_twins(args.world, args.steps)
         return 0 if ok else 1
     if args.cmd == "school":
-        print("lesson 1  planted odors (A=BUY, B=SELL)")
+        print("lesson 1  planted odors")
         ok1, r1 = run_twins("stage0", args.steps)
-        print("lesson 2  rule world (chase the signed return)")
+        print("lesson 2  rule world")
         ok2, r2 = run_twins("rule", args.steps)
         Path("runs").mkdir(parents=True, exist_ok=True)
         Path("runs/school.json").write_text(json.dumps({"stage0": r1, "rule": r2}, indent=2))
-        if ok1 and ok2:
-            print("pass  the fly can learn a planted smell and a named rule")
-            return 0
-        print("fail  curriculum stopped — do not bother BTC yet")
-        return 1
+        return 0 if ok1 and ok2 else 1
+    if args.cmd == "backtest":
+        settings = settings_from(args)
+        if settings.world in {"stage0", "rule", "market"}:
+            settings.world = "replay"
+        settings.fast = True
+        if not settings.steps:
+            settings.steps = 400
+        if settings.out == "runs/paper":
+            settings.out = "runs/backtest"
+        _run(settings, dashboard=not args.no_dashboard)
+        print("backtest done. look at agreement in the dashboard / events.jsonl")
+        return 0
     _run(settings_from(args), dashboard=not args.no_dashboard)
     return 0
