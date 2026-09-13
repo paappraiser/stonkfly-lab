@@ -10,7 +10,7 @@ from .engine import Engine
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="flylab", description="Stonkfly Lab")
+    p = argparse.ArgumentParser(prog="flylab", description="Stonkfly Lab — two bugs, one paper book")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     def add_shared(sp: argparse.ArgumentParser) -> None:
@@ -60,12 +60,25 @@ def settings_from(args: argparse.Namespace) -> Settings:
     )
 
 
+BANNER = """
+       \\\\   /     STONKFLY LAB
+        \\\\_/      two bugs, one paper book
+     .-'     '-.
+    /  (o) (o)  \\    world={world}  colony={colony}  flies={flies}
+    |     ^     |    out={out}
+    \\   '-'   /
+     '-.___,-'      dashboard  {dash}
+"""
+
+
 def _run(settings: Settings, dashboard: bool) -> Engine:
     engine = Engine(settings)
+    dash = "off"
     if dashboard:
         serve(settings.dashboard_host, settings.dashboard_port, settings.run_dir())
-        print(f"dashboard  http://{settings.dashboard_host}:{settings.dashboard_port}")
-    print(f"world={settings.world} colony={settings.colony} flies={settings.n_flies} out={settings.out}")
+        dash = f"http://{settings.dashboard_host}:{settings.dashboard_port}"
+    print(BANNER.format(world=settings.world, colony=settings.colony, flies=settings.n_flies, out=settings.out, dash=dash))
+    print("tiny shoes on. sniffing commences.")
     engine.run()
     return engine
 
@@ -80,9 +93,9 @@ def main(argv: list[str] | None = None) -> int:
         fly = MushroomBody(s, "doc", 1)
         sa, sb = fly.step(enc.planted("A").vector), fly.step(enc.planted("B").vector)
         overlap = float(((sa.kc > 0) & (sb.kc > 0)).mean())
-        print("ok  KCs", s.n_kc, "PNs", s.n_pn)
-        print("ok  planted A vs B sparsity", round(sa.sparsity, 3), round(sb.sparsity, 3), "overlap", round(overlap, 3))
-        print("ok  run: python -m flylab demo")
+        print("antennae work. KCs", s.n_kc, "PNs", s.n_pn)
+        print("odor A vs B sparsity", round(sa.sparsity, 3), round(sb.sparsity, 3), "overlap", round(overlap, 3))
+        print("good. now:  python -m flylab demo")
         return 0
     if args.cmd == "demo":
         settings = Settings(world="stage0", colony="agree", n_flies=2, steps=args.steps, fast=True, out=args.out, dashboard_port=args.port)
