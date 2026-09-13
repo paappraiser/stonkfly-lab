@@ -4,7 +4,7 @@
        \\   /
         \\_/
      .-'     '-.
-    /  (o) (o)  \      two bugs.
+    /  (o) (o)  \\      two bugs.
     |     ^     |      one paper book.
     \\   '-'   /      zero licenses.
      '-.___,-'
@@ -13,27 +13,18 @@
      dopamine juice comes out
 ```
 
-A laptop-sized, slightly unhinged experiment inspired by
-[nftechie/stonkfly](https://github.com/nftechie/stonkfly).
+A laptop-sized experiment inspired by [nftechie/stonkfly](https://github.com/nftechie/stonkfly).
 
-This is **not** the 166,700-neuron MaleCNS graph. That one needs a C++ kernel,
-about 16 GB of RAM, and a 1.1 GB download. This repo keeps the *circuit motif*
-that actually learns in a fly — sparse Kenyon cells, plastic KC→MBON synapses,
-dopamine-gated updates — and wires it so a trading experiment can use it:
+This is **not** the 166,700-neuron MaleCNS graph. Compact mushroom body only:
+sparse Kenyon cells, plastic KC→MBON synapses, delayed dopamine on the last action.
+Dashboard: [http://127.0.0.1:7474](http://127.0.0.1:7474).
 
-- market state as **virtual odors**, not a candlestick screenshot
-- **delayed** dopamine on the action that was just taken
-- readout from the **MBONs you modify**, with hysteresis
-- one or two flies, **agree-or-sit**
-- paper BTC from Coinbase public data
-- a live dashboard that looks like a dive bar for insects: `http://127.0.0.1:7474`
-
-Profitable trading has not been demonstrated. Stage 0 (planted odors) *should*
-learn. That is the whole point. If Stage 0 fails, the market run is cosplay.
+Profitable trading has not been demonstrated. Stage 0 (planted odors) should learn.
+If that fails, a market run is cosplay.
 
 ## Install
 
-Python 3.11+.
+Python 3.11+. WSL users: put the clone on `E:` as `/mnt/e/stonkfly` if `C:` is full.
 
 ```bash
 git clone https://github.com/paappraiser/stonkfly-lab.git
@@ -45,151 +36,129 @@ python -m flylab doctor
 python -m pytest -q
 ```
 
-`doctor` just checks that planted odor A and odor B light different Kenyon cells.
-If they overlap a lot, the memory has nothing to grab.
+## Usage
 
-## Run it
+All commands: `python -m flylab <cmd>`.
 
-### 1. Prove the wire
+| Command | What it does |
+|---|---|
+| `doctor` | Boot check. A and B must light different Kenyon cells. |
+| `demo` | Fast Stage 0, one fly, dashboard. Exits after 250 ticks. |
+| `twins` | Plastic vs frozen vs shuffled on a teacher world. |
+| `school` | Twins on Stage 0, then twins on the rule world. |
+| `run` | Leave-on loop. You pick world, colony, interval. |
+| `backtest` | Fast replay of ~300 Coinbase minutes (or a fake tape). |
 
-```bash
-python -m flylab demo
-```
-
-Opens [http://127.0.0.1:7474](http://127.0.0.1:7474).
-
-Two well-separated smells. Pattern A is supposed to mean BUY. Pattern B is
-supposed to mean SELL. Dopamine arrives on the *next* tick, bound to the Kenyon
-pattern from the decision tick. Accuracy should climb well above a coin flip.
-
-Then run the controls:
+### Prove the wire
 
 ```bash
+python -m flylab doctor
 python -m flylab twins
+python -m flylab twins --world rule
+python -m flylab school
 ```
 
-You want something in this shape:
+Pass looks like plastic >> frozen and shuffled (example: `96% / 0% / 0%`).
+`demo` with two flies in old `agree` mode reports ~0% joint accuracy because HOLD is never the planted answer. Current `demo` is one fly.
 
-```
-plastic     acc=82%
-frozen      acc=51%
-shuffled    acc=48%
-pass  plastic beat frozen and shuffled on planted odors
-```
-
-If plastic cannot beat those two, stop. BTC will not save you.
-
-### 2. Paper BTC, still fake fills
+### Just run it
 
 ```bash
-python -m flylab run --world market --colony agree --flies 2 --interval 15
+# live paper BTC, two flies, softer veto
+python -m flylab run --world market --colony soft --flies 2 --interval 15 --out runs/paper
+
+# one fly, no committee
+python -m flylab run --world market --colony solo --flies 1 --interval 15 --out runs/solo
+
+# fast candle replay
+python -m flylab backtest --colony soft --flies 2 --steps 400 --out runs/backtest
+
+# watch Stage 0 slowly with the dashboard
+python -m flylab run --world stage0 --colony solo --flies 1 --interval 1 --out runs/watch
 ```
 
-Uses Coinbase public BTC-USD prints. Starts with $100 paper cash, $10 clips,
-8 bp fees, flatten-on-halt at a $20 drawdown.
+Open [http://127.0.0.1:7474](http://127.0.0.1:7474) **while the process is running**. Stop with Ctrl-C or `touch runs/paper/STOP`.
 
-No network:
+A `BrokenPipeError` from the dashboard is the browser dropping a frame. The fly is still ticking.
+
+### Worlds
+
+| `--world` | Tape | Teacher |
+|---|---|---|
+| `stage0` | planted smell A=BUY, B=SELL | yes — $0.80 juice per correct yell |
+| `rule` | same pairing, jittered return size | yes |
+| `market` | live Coinbase BTC-USD | mark-to-market, fees |
+| `replay` | last ~300 one-minute closes, fast | mark-to-market |
+| `fixture` | offline random walk | mark-to-market |
+
+Stage 0 / rule **print fake dollars** when accuracy is high. That is the teacher score, not profit.
+
+### Colony
+
+`--flies` is headcount. `--colony` is how votes become one order.
+
+| `--colony` | Rule |
+|---|---|
+| `solo` | One fly. Its side is the order. |
+| `agree` | All must yell the same word or HOLD. |
+| `soft` | Same **sign** of score is enough. HOLD+BUY can become BUY. Opposite signs sit. |
+| `governor` | Fly-0 paints a banner; the scout may only go that way or sit. |
+
+`--clone` copies fly-0 wiring onto the others so `agree` fires more often. That is one brain with two name tags, not two students.
+
+Two-fly `agree` on BTC will sit on HOLD for hours. That is the veto, not a freeze.
+
+### Useful flags
+
+```
+--steps 0          run until STOP / Ctrl-C
+--fast             no sleep between ticks
+--interval 15      seconds between live ticks
+--frozen           no dopamine
+--shuffle-reward   flip dopamine sign (control)
+--out runs/name    ledger + events.jsonl + dashboard files
+--port 7475        if 7474 is busy
+--no-dashboard
+--fee-bps 8
+--product BTC-USD
+```
+
+### Controls
 
 ```bash
-python -m flylab run --world fixture --fast --steps 200
+python -m flylab backtest --colony soft --flies 2 --steps 400 --out runs/bt-plastic
+python -m flylab backtest --colony soft --flies 2 --steps 400 --frozen --out runs/bt-frozen
 ```
 
-Stop with Ctrl-C or `touch runs/paper/STOP`. Same command resumes the ledger.
-
-### 3. Controls on the same tape
-
-```bash
-python -m flylab run --world market --frozen --out runs/frozen
-python -m flylab run --world market --shuffle-reward --out runs/shuffled
-```
-
-A green plastic run that frozen also prints is just BTC going up.
-
-## What one tick actually does
-
-```
-price / inventory / partner vote
-            |
-            v
-     virtual odor   (32 projection-neuron channels)
-            |
-            v
-     800 Kenyon cells, ~8% lit
-            |
-            v
-     buy MBONs vs sell MBONs  ->  score  ->  BUY / SELL / HOLD
-            |
-            v
-     two flies? only trade if they match
-            |
-            v
-     paper broker (or stage-0 teacher)
-            |
-            v
-     NEXT tick: dopamine hits the KC pattern from THIS tick
-```
-
-That last arrow is the whole upgrade versus "look at a chart and hope."
+If those two ledgers match, nothing was learned about the tape.
 
 ## How to read the dashboard
 
-| Thing on screen | What it is | What "good" looks like |
-|---|---|---|
-| Paper pile | cash + inventory marked at mid | not the score that matters |
-| Spectator eyeball | looming disc + price ribbon | ignore for learning; it is theater |
-| What they did | executed side after the guard | BUY/SELL should not be 100% one way |
-| Odor | `move|vol|pos|partner` | should change when the market changes |
-| Agreement | both flies same side | not 0%, not 100% forever |
-| Stage 0 report card | % correct vs planted teacher | climb past ~70% in the demo |
-| sparsity | fraction of KCs on | around 8%; a flood is bad |
-| drift | weight change from birth | frozen twin stays ~0 |
+| Widget | Meaning |
+|---|---|
+| Paper pile | cash + mark-to-mid. Not the grade that matters on Stage 0. |
+| Spectator eyeball | pretty PNG. The brain does not trade off this image. |
+| What they did | executed side after colony + risk. |
+| Odor | `move\|vol\|pos\|partner` |
+| Agreement | did the colony match this tick? |
+| sparsity | fraction of KCs lit. ~8% is healthy. |
+| drift | how far weights moved from birth. Frozen stays ~0. |
 
-Speech bubbles are jokes. The numbers are not.
+## One tick
 
-## The odor alphabet
+```
+odor → sparse KCs → buy vs sell MBONs → colony vote
+ → paper broker or teacher
+ → NEXT tick: dopamine on the KC pattern from THIS tick
+```
 
-The mushroom body in a real fly mostly learns **smells**, not screenshots.
-So the market is encoded as a small odor:
-
-| Factor | Bins | Meaning |
-|---|---|---|
-| `move` | down_strong … up_strong | last return |
-| `vol` | calm / normal / wild | recent wiggliness |
-| `pos` | flat / long / short | are we already in the bag? |
-| `partner` | hold / buy / sell | what the other fly just yelled |
-
-Nearby bins overlap a little, like similar smells. Planted Stage 0 uses only
-the far ends of `move`, so A and B barely share Kenyon cells.
-
-## Colony modes
-
-- `solo` — one fly, its score is the order
-- `agree` — two flies, different random wiring; no match, no trade
-- `governor` — fly-0 paints a banner every 4 steps; fly-1 is the scout
-
-## Risk bugs (the boring ones that save you)
-
-- $20 lifetime hole → halt
-- $8 daily hole → halt
-- flatten-on-halt is on by default
-- max hold 24 steps
-- no shorts
-- paper only. There is no Coinbase order button in this repo
+Teacher worlds flip the sign on SELL so a correct sell strengthens sell MBONs.
 
 ## Honest limits
 
 - Compact MB (800 KCs), not MaleCNS
-- Delayed one-step mark-to-market is still a crude teacher
-- Fees, halt, and time-stops exist so a laptop session cannot quietly sit in a bag
-- If you want the full fly, keep running `nftechie/stonkfly` in paper mode and treat this lab as the place you test encoding + credit assignment
-
-## Layout
-
-```
-flylab/           engine, MB, odors, broker, dashboard
-flylab/web/       the dive-bar UI
-tests/            stage-0 and broker checks
-docs/DESIGN.md    why these choices, with fewer jokes
-```
+- Paper only. No live Coinbase orders in this repo
+- Two-fly market HOLD is expected
+- A rising Stage 0 equity curve is juice, not an ATM
 
 MIT. Not affiliated with Coinbase, Janelia, or any fly that asked to be here.
