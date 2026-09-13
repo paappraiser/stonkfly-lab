@@ -3,19 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>STONKFLY LAB · two bugs one book</title>
-  <link rel="stylesheet" href="/style.css" />
+  <title>STONKFLY LAB</title>
+  <link rel="stylesheet" href="/style.css?v=5" />
 </head>
 <body>
-  <div class="bugs" aria-hidden="true">
-    <span class="bug a">🪰</span><span class="bug b">🪰</span><span class="bug c">✨</span>
-  </div>
+  <div class="bugs" aria-hidden="true"><span class="bug a">🪰</span></div>
   <header>
     <div class="brand">
-      <div class="mascot" title="not a licensed financial advisor">
-        <div class="eyes"><i></i><i></i></div>
-        <div class="body">buzz</div>
-      </div>
+      <div class="mascot"><div class="eyes"><i></i><i></i></div><div class="body">buzz</div></div>
       <div>
         <p class="eyebrow">UNAUTHORIZED FRUIT-FLY TRADING FLOOR</p>
         <h1>Stonkfly Lab</h1>
@@ -28,19 +23,18 @@
       <span id="halt" class="pill">running</span>
     </div>
   </header>
-  <p class="ticker" id="ticker">waiting for the first sniff of the tape ░░░</p>
+  <p class="ticker" id="ticker">waiting for the first sniff</p>
   <section class="hero">
     <div class="card equity">
-      <p class="label">Paper pile <span class="hint">cash + mark-to-mid. Not real money.</span></p>
+      <p class="label">Paper pile <span class="hint">Stage 0 juice is not money</span></p>
       <p class="big" id="equity">$100.00</p>
-      <p class="sub" id="book">cash 100 · qty 0</p>
-      <p class="sub" id="pnl">P&amp;L vs start —</p>
+      <p class="sub" id="book">cash 100</p>
+      <p class="sub" id="pnl">—</p>
       <canvas id="curve" width="640" height="180"></canvas>
     </div>
     <div class="card frame">
-      <p class="label">Spectator eyeball <span class="hint">the brain does not trade off this PNG</span></p>
-      <img id="frame" alt="motion pane" />
-      <p class="sub">looming disc = |last return|. ribbon = recent mids.</p>
+      <p class="label">Spectator eyeball</p>
+      <img id="frame" alt="frame" />
     </div>
   </section>
   <section class="grid four">
@@ -48,7 +42,7 @@
       <p class="label">What they did</p>
       <p class="big" id="joint">HOLD</p>
       <p class="sub" id="reason">—</p>
-      <p class="speech" id="speech">“…still sniffing.”</p>
+      <p class="speech" id="speech">sniffing</p>
     </div>
     <div class="card">
       <p class="label">Odor they actually smelled</p>
@@ -63,54 +57,29 @@
     <div class="card">
       <p class="label">Stage 0 report card</p>
       <p class="big" id="acc">n/a</p>
-      <p class="sub" id="target">planted target —</p>
+      <p class="sub" id="target">—</p>
     </div>
   </section>
   <section class="split sense">
     <div class="card">
-      <p class="label">Antennae — what it is smelling <span class="hint">not the chart. Four glomerulus bundles.</span></p>
+      <p class="label">Antennae — what it is smelling</p>
       <p class="mono" id="odor-name">—</p>
       <div id="glomeruli" class="glomeruli"></div>
       <canvas id="pn-bars" width="640" height="90"></canvas>
-      <p class="sub">each bar is a projection-neuron channel. Lit bars = this tick’s odor.</p>
       <div id="odor-tape" class="odor-tape"></div>
     </div>
     <div class="card">
       <p class="label">Mushroom body — what it is learning</p>
-      <p class="sub" id="learn-verdict">waiting for a sniff…</p>
+      <p class="sub" id="learn-verdict">waiting…</p>
       <div id="memory" class="memory"></div>
-      <p class="hint tight">Green shift = BUY memory up. Pink = SELL memory up. Flat = frozen or no dopamine.</p>
     </div>
   </section>
   <section class="card">
-    <p class="label">Is it learning? / how to improve memory</p>
-    <ul class="tips" id="tips"><li>Stage 0 twins first. If plastic cannot beat frozen, do not blame BTC.</li></ul>
+    <p class="label">Is it learning?</p>
+    <ul class="tips" id="tips"></ul>
   </section>
-  <section class="card">
-    <p class="label">The colony</p>
-    <div id="flies" class="flies"></div>
-  </section>
-  <section class="split">
-    <div class="card">
-      <p class="label">What just happened in one tick</p>
-      <ol class="steps">
-        <li>Sniff a virtual odor built from return, vol, inventory, partner.</li>
-        <li>Sparse Kenyon cells fire (~8%).</li>
-        <li>MBONs vote BUY / SELL / HOLD.</li>
-        <li>Colony combines votes.</li>
-        <li>Next tick, delayed dopamine grades that last action.</li>
-      </ol>
-    </div>
-    <div class="card glossary">
-      <p class="label">Field guide</p>
-      <dl>
-        <dt>odor</dt><dd>Conditioned stimulus. Not a candlestick.</dd>
-        <dt>sparsity</dt><dd>Fraction of KCs lit. A flood means the code collapsed.</dd>
-        <dt>drift</dt><dd>How far KC→MBON weights moved from birth.</dd>
-      </dl>
-    </div>
-  </section>
-  <footer>Two bugs. One paper book. Compact mushroom body, not MaleCNS.</footer>
-  <script src="/app.js"></script>
+  <section class="card"><p class="label">The colony</p><div id="flies" class="flies"></div></section>
+  <footer>Stage 0 dollars are teacher juice. Compact MB, not MaleCNS.</footer>
+  <script src="/app.js?v=5"></script>
 </body>
 </html>
