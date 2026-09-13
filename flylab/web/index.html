@@ -3,44 +3,103 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Stonkfly Lab</title>
+  <title>STONKFLY LAB · two bugs one book</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
+  <div class="bugs" aria-hidden="true">
+    <span class="bug a">🪰</span><span class="bug b">🪰</span><span class="bug c">✨</span>
+  </div>
   <header>
-    <div>
-      <p class="eyebrow">STONKFLY LAB</p>
-      <h1 id="title">waiting for first tick…</h1>
+    <div class="brand">
+      <div class="mascot" title="not a licensed financial advisor">
+        <div class="eyes"><i></i><i></i></div>
+        <div class="body">buzz</div>
+      </div>
+      <div>
+        <p class="eyebrow">UNAUTHORIZED FRUIT-FLY TRADING FLOOR</p>
+        <h1>Stonkfly Lab</h1>
+        <p class="tagline" id="tagline">warming up the antennae…</p>
+      </div>
     </div>
     <div class="pills">
-      <span id="world" class="pill">—</span>
-      <span id="colony" class="pill">—</span>
+      <span id="world" class="pill">world —</span>
+      <span id="colony" class="pill">colony —</span>
       <span id="halt" class="pill">running</span>
     </div>
   </header>
+  <p class="ticker" id="ticker">waiting for the first sniff of the tape ░░░</p>
   <section class="hero">
     <div class="card equity">
-      <p class="label">Equity</p>
+      <p class="label">Paper pile <span class="hint">cash + mark-to-mid inventory. Not real money.</span></p>
       <p class="big" id="equity">$100.00</p>
       <p class="sub" id="book">cash 100 · qty 0</p>
+      <p class="sub" id="pnl">P&amp;L vs start —</p>
       <canvas id="curve" width="640" height="180"></canvas>
     </div>
     <div class="card frame">
-      <p class="label">Fly eye / motion pane</p>
-      <img id="frame" alt="fly visual frame" />
+      <p class="label">Spectator eyeball <span class="hint">pretty picture. The brain does not trade off this PNG.</span></p>
+      <img id="frame" alt="motion pane" />
+      <p class="sub" id="frame-note">looming disc = |last return|. ribbon = recent mids.</p>
     </div>
   </section>
-  <section class="grid">
-    <div class="card"><p class="label">Joint action</p><p class="big" id="joint">HOLD</p><p class="sub" id="reason">—</p></div>
-    <div class="card"><p class="label">Odor</p><p class="mono" id="odor">—</p><p class="sub" id="labels">—</p></div>
-    <div class="card"><p class="label">Agreement</p><p class="big" id="agree">—</p><p class="sub" id="agree-stats">—</p></div>
-    <div class="card"><p class="label">Stage 0 accuracy</p><p class="big" id="acc">n/a</p><p class="sub" id="target">planted target —</p></div>
+  <section class="grid four">
+    <div class="card shout">
+      <p class="label">What they did</p>
+      <p class="big" id="joint">HOLD</p>
+      <p class="sub" id="reason">—</p>
+      <p class="speech" id="speech">“…still sniffing.”</p>
+    </div>
+    <div class="card">
+      <p class="label">Odor they actually smelled</p>
+      <p class="mono" id="odor">—</p>
+      <p class="sub" id="labels">—</p>
+      <p class="hint tight">move · vol · inventory · partner’s last yell</p>
+    </div>
+    <div class="card">
+      <p class="label">Do they agree?</p>
+      <p class="big" id="agree">—</p>
+      <p class="sub" id="agree-stats">—</p>
+      <p class="hint tight">agree-or-sit: no matching yell, no order.</p>
+    </div>
+    <div class="card">
+      <p class="label">Stage 0 report card</p>
+      <p class="big" id="acc">n/a</p>
+      <p class="sub" id="target">planted target —</p>
+      <p class="hint tight">If this stays near 50%, the wire is still spaghetti.</p>
+    </div>
   </section>
   <section class="card">
-    <p class="label">Colony</p>
+    <p class="label">The colony <span class="hint">each fly has different random KC wiring. Score = buy MBONs − sell MBONs.</span></p>
     <div id="flies" class="flies"></div>
   </section>
-  <footer>Paper only. Compact mushroom body, not the 166k MaleCNS graph.</footer>
+  <section class="split">
+    <div class="card">
+      <p class="label">What just happened in one tick</p>
+      <ol class="steps">
+        <li>Sniff a virtual odor built from return, vol, inventory, partner.</li>
+        <li>Sparse Kenyon cells fire (~8%).</li>
+        <li>Mushroom-body output neurons vote BUY / SELL / HOLD.</li>
+        <li>If two flies, they only trade when the votes match.</li>
+        <li>Next tick, delayed dopamine grades that last action.</li>
+      </ol>
+    </div>
+    <div class="card glossary">
+      <p class="label">Field guide</p>
+      <dl>
+        <dt>odor</dt><dd>The conditioned stimulus. Not a candlestick. Four factors glued into one smell.</dd>
+        <dt>sparsity</dt><dd>Fraction of Kenyon cells lit. Should stay small. A flood means the odor code collapsed.</dd>
+        <dt>drift</dt><dd>How far KC→MBON weights have wandered from birth. Zero on a frozen twin.</dd>
+        <dt>agreement</dt><dd>Both flies yelled the same side. Disagreement becomes HOLD on purpose.</dd>
+        <dt>halt</dt><dd>$20 hole or daily loss cap. Default flatten-on-halt so the bag does not sit overnight.</dd>
+        <dt>stage 0</dt><dd>Planted A→BUY, B→SELL world. If plastic cannot beat frozen here, BTC is a costume.</dd>
+      </dl>
+    </div>
+  </section>
+  <footer>
+    Two bugs. One paper book. Zero licenses. Compact mushroom body, not MaleCNS.
+    Inspired by nftechie/stonkfly — this lab is the joke with the learning wire actually plugged in.
+  </footer>
   <script src="/app.js"></script>
 </body>
 </html>
