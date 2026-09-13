@@ -58,6 +58,7 @@ h1 { margin: 0; font-size: 34px; line-height: 1; text-shadow: 2px 2px 0 #000; }
 .speech { margin: 10px 0 0; padding: 8px 10px; border-radius: 12px 12px 12px 2px; background: #3a2214; color: #ffe7c2; font-style: italic; }
 .frame img { width: 100%; border-radius: 10px; background: #0e0906; min-height: 150px; image-rendering: pixelated; border: 2px solid #3a2418; }
 canvas { width: 100%; height: 140px; margin-top: 10px; }
+#pn-bars { height: 80px; }
 .flies { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; }
 .fly { border: 2px dashed #5a3318; border-radius: 14px; padding: 12px; background: #140c08; }
 .bar { height: 8px; background: #0007; border-radius: 99px; margin-top: 8px; overflow: hidden; }
@@ -66,5 +67,28 @@ canvas { width: 100%; height: 140px; margin-top: 10px; }
 .steps { margin: 10px 0 0; padding-left: 18px; color: var(--mute); }
 .glossary dt { color: var(--goo); font-family: ui-monospace, monospace; margin-top: 8px; }
 .glossary dd { margin: 2px 0 0; color: var(--mute); }
+.glomeruli { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 10px 0; }
+.glom { border: 2px dashed #5a3318; border-radius: 12px; padding: 8px; background: #140c08; }
+.glom .gname { color: var(--goo); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.glom .gval { font-size: 16px; margin-top: 4px; }
+.glom.on { border-style: solid; box-shadow: 0 0 12px #ffb34755; }
+.odor-tape { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+.chip { font-size: 10px; font-family: ui-monospace, monospace; border: 1px solid #5a3318; border-radius: 999px; padding: 2px 7px; color: var(--mute); }
+.chip.BUY { color: var(--buy); border-color: #2a5; }
+.chip.SELL { color: var(--sell); border-color: #a45; }
+.memory { display: grid; gap: 10px; margin-top: 10px; }
+.mem { border: 2px dashed #5a3318; border-radius: 12px; padding: 10px; background: #140c08; }
+.kc-row { display: flex; gap: 1px; height: 28px; margin: 8px 0; }
+.kc-row i { flex: 1; background: #3a2214; border-radius: 1px; }
+.shift { display: flex; gap: 8px; font-size: 12px; flex-wrap: wrap; }
+.tips { margin: 8px 0 0; padding-left: 18px; color: var(--mute); }
+.tips li { margin: 6px 0; }
+.tips .ok { color: var(--buy); }
+.tips .bad { color: var(--sell); }
+.tips .meh { color: var(--hold); }
 footer { color: var(--mute); font-size: 12px; padding-bottom: 40px; }
-@media (max-width: 900px) { .hero, .four, .split { grid-template-columns: 1fr; } h1 { font-size: 26px; } }
+@media (max-width: 900px) {
+  .hero, .four, .split { grid-template-columns: 1fr; }
+  .glomeruli { grid-template-columns: 1fr 1fr; }
+  h1 { font-size: 26px; }
+}
