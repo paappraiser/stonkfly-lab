@@ -31,29 +31,33 @@ class Colony:
                 settings.decoder_threshold,
                 settings.decoder_hysteresis,
                 seed=settings.seed + 31 * (i + 1),
-                explore=0.25 if settings.world == "stage0" else 0.08,
+                explore=0.25 if settings.world in {"stage0", "rule"} else 0.08,
             )
             for i in range(len(self.flies))
         ]
         self.last_sides = ["HOLD"] * len(self.flies)
         self.banner = "HOLD"
         self.governor_clock = 0
+        if getattr(settings, "clone_weights", False) and len(self.flies) > 1:
+            src = self.flies[0]
+            for fly in self.flies[1:]:
+                fly.pn_to_kc = src.pn_to_kc.copy()
+                fly.w_buy = src.w_buy.copy()
+                fly.w_sell = src.w_sell.copy()
+                fly.w_buy0 = src.w_buy0.copy()
+                fly.w_sell0 = src.w_sell0.copy()
 
     def perceive(self, *, ret: float, vol: float, position_qty: float, planted: str | None = None) -> Odor:
         partner = self.last_sides[0] if self.last_sides else "HOLD"
         if planted:
             return self.encoder.planted(planted)
         return self.encoder.encode(
-            ret=ret,
-            vol=vol,
-            position_qty=position_qty,
-            partner_side=partner,
+            ret=ret, vol=vol, position_qty=position_qty, partner_side=partner,
             include_partner=self.settings.partner_channel and len(self.flies) > 1,
         )
 
     def decide(self, odor: Odor) -> ColonyStep:
-        states = []
-        proposals = []
+        states, proposals = [], []
         for fly, decoder in zip(self.flies, self.decoders):
             state = fly.step(odor.vector)
             proposal = decoder.decode(state.score)
@@ -72,6 +76,17 @@ class Colony:
             return Proposal("HOLD", 0.0, 0.0), True
         if self.settings.colony == "solo" or len(proposals) == 1:
             return proposals[0], True
+        if self.settings.colony == "soft":
+            scores = [p.score for p in proposals]
+            mean = sum(scores) / len(scores)
+            signs = [1 if s > 0.01 else -1 if s < -0.01 else 0 for s in scores]
+            if -1 in signs and 1 in signs:
+                return Proposal("HOLD", mean, abs(mean)), False
+            if 1 in signs:
+                return Proposal("BUY", mean, abs(mean)), True
+            if -1 in signs:
+                return Proposal("SELL", mean, abs(mean)), True
+            return Proposal("HOLD", mean, abs(mean)), False
         if self.settings.colony == "governor":
             scout = proposals[-1]
             if self.banner == "HOLD":
@@ -80,10 +95,9 @@ class Colony:
                 return scout if scout.side != "HOLD" else Proposal(self.banner, scout.score, scout.confidence), True
             return Proposal("HOLD", scout.score, scout.confidence), False
         sides = {p.side for p in proposals}
-        if len(sides) == 1:
-            mean = sum(p.score for p in proposals) / len(proposals)
-            return Proposal(proposals[0].side, mean, abs(mean)), True
         mean = sum(p.score for p in proposals) / len(proposals)
+        if len(sides) == 1:
+            return Proposal(proposals[0].side, mean, abs(mean)), True
         return Proposal("HOLD", mean, abs(mean)), False
 
     def reinforce_all(self, snapshots: list, valence: float) -> None:

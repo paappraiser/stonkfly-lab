@@ -32,6 +32,7 @@ class Settings:
     decoder_hysteresis: float = 0.01
     n_flies: int = 2
     colony: str = "agree"
+    clone_weights: bool = False
     partner_channel: bool = True
     world: str = "market"
     horizon_steps: int = 4

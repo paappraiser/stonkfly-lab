@@ -64,6 +64,38 @@ class LiveTape:
         return Quote(self.product, bid, ask, mid, time.time(), list(self.history))
 
 
+class ReplayTape:
+    def __init__(self, product: str = "BTC-USD", seed: int = 7):
+        self.product = product
+        self.seed = seed
+        self.closes: list[float] = []
+        self.i = 1
+
+    def seed(self) -> None:
+        try:
+            url = f"{COINBASE}/products/{self.product}/candles?granularity=60"
+            raw = _get(url)
+            closes = [float(row[4]) for row in sorted(raw, key=lambda r: r[0])]
+            self.closes = closes[-300:] or [100.0]
+        except Exception:
+            rng = random.Random(self.seed)
+            price = 100.0
+            self.closes = [price]
+            for _ in range(300):
+                price = max(1.0, price * (1.0 + rng.gauss(0.0001, 0.004)))
+                self.closes.append(price)
+        self.i = 2
+
+    def quote(self) -> Quote:
+        if self.i >= len(self.closes):
+            self.i = 2
+        mid = self.closes[self.i]
+        hist = self.closes[: self.i + 1]
+        self.i += 1
+        spread = mid * 0.0004
+        return Quote(self.product + "-REPLAY", mid - spread / 2, mid + spread / 2, mid, time.time(), hist)
+
+
 class FixtureTape:
     def __init__(self, start: float = 100.0, seed: int = 7):
         self.product = "FIXTURE-USD"
