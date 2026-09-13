@@ -14,7 +14,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     def add_shared(sp: argparse.ArgumentParser) -> None:
-        sp.add_argument("--world", choices=["stage0", "market", "fixture"], default="stage0")
+        sp.add_argument("--world", choices=["stage0", "rule", "market", "fixture"], default="stage0")
         sp.add_argument("--colony", choices=["solo", "agree", "governor"], default="agree")
         sp.add_argument("--flies", type=int, default=2)
         sp.add_argument("--product", default="BTC-USD")
@@ -36,8 +36,11 @@ def build_parser() -> argparse.ArgumentParser:
     demo.add_argument("--out", default="runs/demo")
     demo.add_argument("--port", type=int, default=7474)
     sub.add_parser("doctor", help="quick self-check")
-    twins = sub.add_parser("twins", help="plastic vs frozen vs shuffled on stage0")
+    twins = sub.add_parser("twins", help="plastic vs frozen vs shuffled")
+    twins.add_argument("--world", choices=["stage0", "rule"], default="stage0")
     twins.add_argument("--steps", type=int, default=200)
+    school = sub.add_parser("school", help="curriculum: stage0 then rule-world twins")
+    school.add_argument("--steps", type=int, default=200)
     return p
 
 
@@ -49,7 +52,7 @@ def settings_from(args: argparse.Namespace) -> Settings:
         n_flies=getattr(args, "flies", 2),
         product=getattr(args, "product", "BTC-USD"),
         steps=getattr(args, "steps", 0),
-        fast=bool(getattr(args, "fast", False) or world == "stage0"),
+        fast=bool(getattr(args, "fast", False) or world in {"stage0", "rule"}),
         frozen=bool(getattr(args, "frozen", False)),
         shuffle_reward=bool(getattr(args, "shuffle_reward", False)),
         out=getattr(args, "out", "runs/paper"),
@@ -83,6 +86,36 @@ def _run(settings: Settings, dashboard: bool) -> Engine:
     return engine
 
 
+def run_twins(world: str, steps: int) -> tuple[bool, dict]:
+    results = {}
+    for name, frozen, shuffle in (
+        ("plastic", False, False),
+        ("frozen", True, False),
+        ("shuffled", False, True),
+    ):
+        s = Settings(
+            world=world,
+            colony="solo",
+            n_flies=1,
+            steps=steps,
+            fast=True,
+            frozen=frozen,
+            shuffle_reward=shuffle,
+            out=f"runs/twin-{world}-{name}",
+            seed=7,
+        )
+        engine = Engine(s)
+        engine.run()
+        acc = engine.metrics["correct_stage0"] / max(engine.metrics["stage0_decisions"], 1)
+        results[name] = acc
+        print(f"  {world:7} {name:10}  acc={acc:.1%}")
+    Path("runs").mkdir(parents=True, exist_ok=True)
+    Path(f"runs/twins-{world}.json").write_text(json.dumps(results, indent=2))
+    ok = results["plastic"] > results["frozen"] and results["plastic"] > results["shuffled"]
+    print(("pass" if ok else "fail") + f"  {world} plastic vs controls")
+    return ok, results
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.cmd == "doctor":
@@ -98,27 +131,26 @@ def main(argv: list[str] | None = None) -> int:
         print("good. now:  python -m flylab demo")
         return 0
     if args.cmd == "demo":
-        settings = Settings(world="stage0", colony="agree", n_flies=2, steps=args.steps, fast=True, out=args.out, dashboard_port=args.port)
+        settings = Settings(world="stage0", colony="solo", n_flies=1, steps=args.steps, fast=True, out=args.out, dashboard_port=args.port)
         engine = _run(settings, dashboard=True)
         acc = engine.metrics["correct_stage0"] / max(engine.metrics["stage0_decisions"], 1)
         print(f"stage0 accuracy {acc:.1%} over {engine.metrics['stage0_decisions']} decisions")
         print("This is a planted association, not market edge.")
         return 0 if acc > 0.6 else 1
     if args.cmd == "twins":
-        results = {}
-        for name, frozen, shuffle, out in (("plastic", False, False, "runs/twin-plastic"), ("frozen", True, False, "runs/twin-frozen"), ("shuffled", False, True, "runs/twin-shuffled")):
-            s = Settings(world="stage0", colony="solo", n_flies=1, steps=args.steps, fast=True, frozen=frozen, shuffle_reward=shuffle, out=out, seed=7)
-            engine = Engine(s)
-            engine.run()
-            acc = engine.metrics["correct_stage0"] / max(engine.metrics["stage0_decisions"], 1)
-            results[name] = acc
-            print(f"{name:10}  acc={acc:.1%}")
+        ok, _ = run_twins(args.world, args.steps)
+        return 0 if ok else 1
+    if args.cmd == "school":
+        print("lesson 1  planted odors (A=BUY, B=SELL)")
+        ok1, r1 = run_twins("stage0", args.steps)
+        print("lesson 2  rule world (chase the signed return)")
+        ok2, r2 = run_twins("rule", args.steps)
         Path("runs").mkdir(parents=True, exist_ok=True)
-        Path("runs/twins.json").write_text(json.dumps(results, indent=2))
-        if results["plastic"] > results["frozen"] and results["plastic"] > results["shuffled"]:
-            print("pass  plastic beat frozen and shuffled on planted odors")
+        Path("runs/school.json").write_text(json.dumps({"stage0": r1, "rule": r2}, indent=2))
+        if ok1 and ok2:
+            print("pass  the fly can learn a planted smell and a named rule")
             return 0
-        print("fail  memory rule did not beat controls")
+        print("fail  curriculum stopped — do not bother BTC yet")
         return 1
     _run(settings_from(args), dashboard=not args.no_dashboard)
     return 0
