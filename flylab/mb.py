@@ -21,8 +21,6 @@ class FlyState:
 
 
 class MushroomBody:
-    """Compact analog of the fly MB used by Stonkfly."""
-
     def __init__(self, settings: Settings, name: str, seed: int):
         self.settings = settings
         self.name = name
@@ -41,17 +39,7 @@ class MushroomBody:
         self.w_buy = self.w_buy0.copy()
         self.w_sell = self.w_sell0.copy()
         self.eligibility = np.zeros(n_kc, dtype=np.float64)
-        self.last = FlyState(
-            name=name,
-            pn=np.zeros(n_pn),
-            kc=np.zeros(n_kc),
-            mbon_buy=np.zeros(n_buy),
-            mbon_sell=np.zeros(n_sell),
-            eligibility=self.eligibility.copy(),
-            score=0.0,
-            sparsity=0.0,
-            weight_drift=0.0,
-        )
+        self.last = FlyState(name=name, pn=np.zeros(n_pn), kc=np.zeros(n_kc), mbon_buy=np.zeros(n_buy), mbon_sell=np.zeros(n_sell), eligibility=self.eligibility.copy(), score=0.0, sparsity=0.0, weight_drift=0.0)
 
     def step(self, pn: np.ndarray) -> FlyState:
         s = self.settings
@@ -67,21 +55,8 @@ class MushroomBody:
         score = float(buy.mean() - sell.mean()) / denom
         self.eligibility *= 1.0 - s.eligibility_decay
         self.eligibility += kc
-        drift = float(
-            np.mean(np.abs(self.w_buy / (self.w_buy0 + 1e-12) - 1.0))
-            + np.mean(np.abs(self.w_sell / (self.w_sell0 + 1e-12) - 1.0))
-        )
-        self.last = FlyState(
-            name=self.name,
-            pn=np.asarray(pn, dtype=np.float64),
-            kc=kc,
-            mbon_buy=buy,
-            mbon_sell=sell,
-            eligibility=self.eligibility.copy(),
-            score=score,
-            sparsity=float(np.mean(kc > 0)),
-            weight_drift=drift,
-        )
+        drift = float(np.mean(np.abs(self.w_buy / (self.w_buy0 + 1e-12) - 1.0)) + np.mean(np.abs(self.w_sell / (self.w_sell0 + 1e-12) - 1.0)))
+        self.last = FlyState(name=self.name, pn=np.asarray(pn, dtype=np.float64), kc=kc, mbon_buy=buy, mbon_sell=sell, eligibility=self.eligibility.copy(), score=score, sparsity=float(np.mean(kc > 0)), weight_drift=drift)
         return self.last
 
     def snapshot_eligibility(self) -> np.ndarray:
@@ -99,6 +74,17 @@ class MushroomBody:
         self.w_sell -= np.outer(e, np.ones(s.n_mbon_sell)) * (step / max(s.n_kc * s.sparsity_target, 1.0))
         self._decay_and_clip()
 
+    def dashboard(self) -> dict:
+        buy_shift = float(np.mean(self.w_buy / (self.w_buy0 + 1e-12) - 1.0))
+        sell_shift = float(np.mean(self.w_sell / (self.w_sell0 + 1e-12) - 1.0))
+        kc = self.last.kc
+        bins = 48
+        preview = []
+        if kc.size:
+            step = max(1, kc.size // bins)
+            preview = [round(float(kc[i : i + step].mean()), 4) for i in range(0, kc.size, step)][:bins]
+        return {"buy_shift": buy_shift, "sell_shift": sell_shift, "buy": float(self.last.mbon_buy.mean()) if self.last.mbon_buy.size else 0.0, "sell": float(self.last.mbon_sell.mean()) if self.last.mbon_sell.size else 0.0, "kc_preview": preview}
+
     def reset_memory(self) -> None:
         self.w_buy = self.w_buy0.copy()
         self.w_sell = self.w_sell0.copy()
@@ -108,7 +94,5 @@ class MushroomBody:
         s = self.settings
         self.w_buy -= s.memory_decay * (self.w_buy - self.w_buy0)
         self.w_sell -= s.memory_decay * (self.w_sell - self.w_sell0)
-        lo_b, hi_b = s.weight_min * self.w_buy0, s.weight_max * self.w_buy0
-        lo_s, hi_s = s.weight_min * self.w_sell0, s.weight_max * self.w_sell0
-        np.clip(self.w_buy, lo_b, hi_b, out=self.w_buy)
-        np.clip(self.w_sell, lo_s, hi_s, out=self.w_sell)
+        np.clip(self.w_buy, s.weight_min * self.w_buy0, s.weight_max * self.w_buy0, out=self.w_buy)
+        np.clip(self.w_sell, s.weight_min * self.w_sell0, s.weight_max * self.w_sell0, out=self.w_sell)
