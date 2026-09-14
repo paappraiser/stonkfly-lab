@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import time
 
 import numpy as np
 
 GROUPS = {
     "move": ("down_strong", "down", "flat", "up", "up_strong"),
+    "lag": ("down_strong", "down", "flat", "up", "up_strong"),
     "vol": ("calm", "normal", "wild"),
     "pos": ("flat", "long", "short"),
+    "session": ("asia", "london", "ny", "off"),
     "partner": ("hold", "buy", "sell"),
 }
 GROUP_SIZES = {name: len(labels) for name, labels in GROUPS.items()}
@@ -15,8 +18,7 @@ GROUP_SIZES = {name: len(labels) for name, labels in GROUPS.items()}
 
 def pn_layout(n_pn: int) -> dict[str, slice]:
     names = list(GROUPS)
-    widths = []
-    remaining = n_pn
+    widths, remaining = [], n_pn
     for i, name in enumerate(names):
         if i == len(names) - 1:
             widths.append(remaining)
@@ -25,8 +27,7 @@ def pn_layout(n_pn: int) -> dict[str, slice]:
             w = min(w, remaining - (len(names) - i - 1))
             widths.append(w)
             remaining -= w
-    layout = {}
-    cursor = 0
+    layout, cursor = {}, 0
     for name, width in zip(names, widths):
         layout[name] = slice(cursor, cursor + width)
         cursor += width
@@ -84,24 +85,33 @@ def partner_bin(side: str) -> int:
     return {"HOLD": 0, "BUY": 1, "SELL": 2}.get(side, 0)
 
 
+def session_bin(ts: float | None = None) -> int:
+    hour = time.gmtime(ts or time.time()).tm_hour
+    if 0 <= hour < 7:
+        return 0
+    if 7 <= hour < 13:
+        return 1
+    if 13 <= hour < 21:
+        return 2
+    return 3
+
+
 class OdorEncoder:
     def __init__(self, n_pn: int):
         self.n_pn = int(n_pn)
         self.layout = pn_layout(self.n_pn)
+        self.ret_hist: list[float] = []
 
-    def encode(
-        self,
-        *,
-        ret: float,
-        vol: float,
-        position_qty: float,
-        partner_side: str = "HOLD",
-        include_partner: bool = True,
-    ) -> Odor:
+    def encode(self, *, ret: float, vol: float, position_qty: float, partner_side: str = "HOLD", include_partner: bool = True) -> Odor:
+        self.ret_hist.append(float(ret))
+        self.ret_hist = self.ret_hist[-8:]
+        lag = self.ret_hist[0] if len(self.ret_hist) >= 5 else 0.0
         labels = {
             "move": GROUPS["move"][move_bin(ret)],
+            "lag": GROUPS["lag"][move_bin(lag)],
             "vol": GROUPS["vol"][vol_bin(vol)],
             "pos": GROUPS["pos"][pos_bin(position_qty)],
+            "session": GROUPS["session"][session_bin()],
             "partner": GROUPS["partner"][partner_bin(partner_side)],
         }
         vector = np.zeros(self.n_pn, dtype=np.float64)
@@ -111,10 +121,9 @@ class OdorEncoder:
             sl = self.layout[group]
             width = sl.stop - sl.start
             idx = GROUPS[group].index(label)
-            scaled = idx / max(len(GROUPS[group]) - 1, 1)
-            center = int(round(scaled * max(width - 1, 0)))
+            center = int(round((idx / max(len(GROUPS[group]) - 1, 1)) * max(width - 1, 0)))
             vector[sl] = _one_hot_fill(width, center)
-        name = "{move}|{vol}|{pos}|{partner}".format(**labels)
+        name = "{move}|{lag}|{vol}|{pos}|{session}|{partner}".format(**labels)
         return Odor(name=name, vector=vector, labels=labels)
 
     def planted(self, pattern: str) -> Odor:
@@ -123,12 +132,11 @@ class OdorEncoder:
         width = sl.stop - sl.start
         if pattern == "A":
             vector[sl] = _one_hot_fill(width, width - 1)
-            labels = {"move": "up_strong", "vol": "calm", "pos": "flat", "partner": "hold"}
+            labels = {"move": "up_strong", "lag": "flat", "vol": "calm", "pos": "flat", "session": "off", "partner": "hold"}
         elif pattern == "B":
             vector[sl] = _one_hot_fill(width, 0)
-            labels = {"move": "down_strong", "vol": "calm", "pos": "flat", "partner": "hold"}
+            labels = {"move": "down_strong", "lag": "flat", "vol": "calm", "pos": "flat", "session": "off", "partner": "hold"}
         else:
-            labels = {"move": "flat", "vol": "calm", "pos": "flat", "partner": "hold"}
-            mid = self.layout["vol"]
-            vector[mid] = 0.4
+            labels = {"move": "flat", "lag": "flat", "vol": "calm", "pos": "flat", "session": "off", "partner": "hold"}
+            vector[self.layout["vol"]] = 0.4
         return Odor(name=f"planted-{pattern}", vector=vector, labels=labels)
