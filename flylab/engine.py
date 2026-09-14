@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import threading
 import time
+from pathlib import Path
 
 from .broker import PaperBroker
 from .colony import Colony
@@ -21,12 +22,7 @@ class Engine:
         self.colony = Colony(settings)
         self.broker = PaperBroker.load(self.run_dir / "ledger.json", settings.starting_cash, settings.fee_bps)
         self.guard = Guard(settings, self.run_dir)
-        if settings.world == "stage0":
-            self.world = Stage0World(settings.seed)
-        elif settings.world == "rule":
-            self.world = RuleWorld(settings.seed)
-        else:
-            self.world = None
+        self.world = Stage0World(settings.seed) if settings.world == "stage0" else RuleWorld(settings.seed) if settings.world == "rule" else None
         if settings.world == "market":
             self.tape = LiveTape(settings.product)
         elif settings.world == "replay":
@@ -44,6 +40,10 @@ class Engine:
 
     def prepare(self) -> None:
         self.tape.seed()
+        src = self.settings.load_memory or str(self.run_dir / "brains.json")
+        if src and Path(src).exists():
+            self.colony.load_brains(src)
+            print("loaded memory", src)
         try:
             (self.run_dir / "settings.json").write_text(json.dumps(self.settings.signature(), indent=2))
         except OSError:
@@ -69,10 +69,7 @@ class Engine:
             valence = self._settle(quote)
             action = str(self.pending.get("action", "HOLD"))
             if self.world:
-                if action == "SELL":
-                    valence = -valence
-                elif action not in {"BUY", "SELL"}:
-                    valence = 0.0
+                valence = -valence if action == "SELL" else (valence if action in {"BUY", "SELL"} else 0.0)
             self.last_valence = float(valence)
             if valence != 0:
                 self.colony.reinforce_all(self.pending["elig"], valence)
@@ -87,8 +84,7 @@ class Engine:
             self.metrics["stage0_decisions"] += 1
             if proposed == target:
                 self.metrics["correct_stage0"] += 1
-            reason = "stage0"
-            executed = proposed
+            reason, executed = "stage0", proposed
             self.broker.cash += self.world.outcome(proposed, target)
             equity_after = self.broker.equity(quote.mid)
         else:
@@ -124,12 +120,11 @@ class Engine:
             "executed": executed, "reason": reason, "agreement": step.agreement, "banner": step.banner,
             "equity": equity_after, "cash": self.broker.cash, "qty": self.broker.qty, "fee": fee,
             "halted": self.broker.halted, "halt_reason": self.broker.halt_reason,
-            "flies": flies,
-            "metrics": dict(self.metrics), "stage0_target": target,
+            "flies": flies, "metrics": dict(self.metrics), "stage0_target": target,
             "stage0_acc": (self.metrics["correct_stage0"] / self.metrics["stage0_decisions"] if self.metrics["stage0_decisions"] else None),
             "history": quote.history[-80:],
         }
-        self.odor_log.append({"step": self.step_i, "name": odor.name, "labels": odor.labels, "executed": executed, "target": target, "valence": self.last_valence})
+        self.odor_log.append({"step": self.step_i, "name": odor.name, "labels": odor.labels, "executed": executed, "valence": self.last_valence})
         self.odor_log = self.odor_log[-48:]
         event["odor_log"] = list(self.odor_log)
         self.events.append(event)
@@ -139,6 +134,11 @@ class Engine:
             self.broker.save()
         except OSError:
             pass
+        if self.step_i % 10 == 0:
+            try:
+                self.colony.save_brains(self.run_dir / "brains.json")
+            except OSError:
+                pass
         self.step_i += 1
         return event
 
@@ -148,20 +148,10 @@ class Engine:
             return self.world.outcome(str(pending.get("action", "HOLD")), pending.get("target"))
         s = self.settings
         equity_now = self.broker.equity(quote.mid)
-        return grade(
-            equity_now=equity_now, equity_then=float(pending.get("equity", equity_now)),
-            action=str(pending.get("action", "HOLD")), filled=bool(pending.get("filled")),
-            fee_paid=float(pending.get("fee", 0.0)), deadband=s.deadband,
-            exclude_fees=s.exclude_fees_from_reward, proportional=s.proportional_dopamine,
-            order_notional=s.order_notional,
-        ).valence
+        return grade(equity_now=equity_now, equity_then=float(pending.get("equity", equity_now)), action=str(pending.get("action", "HOLD")), filled=bool(pending.get("filled")), fee_paid=float(pending.get("fee", 0.0)), deadband=s.deadband, exclude_fees=s.exclude_fees_from_reward, proportional=s.proportional_dopamine, order_notional=s.order_notional).valence
 
     def _write_state(self, event: dict) -> None:
-        payload = {
-            "event": event, "equity_curve": self.broker.equity_curve[-300:],
-            "fills": [asdict_fill(f) for f in self.broker.fills[-40:]],
-            "settings": {"world": self.settings.world, "colony": self.settings.colony, "n_flies": self.settings.n_flies, "product": self.settings.product, "fee_bps": self.settings.fee_bps, "frozen": self.settings.frozen},
-        }
+        payload = {"event": event, "equity_curve": self.broker.equity_curve[-300:], "fills": [asdict_fill(f) for f in self.broker.fills[-40:]], "settings": {"world": self.settings.world, "colony": self.settings.colony, "n_flies": self.settings.n_flies, "product": self.settings.product, "fee_bps": self.settings.fee_bps, "frozen": self.settings.frozen}}
         try:
             (self.run_dir / "latest.json").write_text(json.dumps(payload))
             with (self.run_dir / "events.jsonl").open("a") as fh:
@@ -181,6 +171,10 @@ class Engine:
                 break
             if not self.settings.fast:
                 time.sleep(self.settings.interval_seconds)
+        try:
+            self.colony.save_brains(self.run_dir / "brains.json")
+        except OSError:
+            pass
 
     def stop(self) -> None:
         self.alive = False
