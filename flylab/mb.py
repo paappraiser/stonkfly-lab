@@ -83,12 +83,33 @@ class MushroomBody:
         if kc.size:
             step = max(1, kc.size // bins)
             preview = [round(float(kc[i : i + step].mean()), 4) for i in range(0, kc.size, step)][:bins]
-        return {"buy_shift": buy_shift, "sell_shift": sell_shift, "buy": float(self.last.mbon_buy.mean()) if self.last.mbon_buy.size else 0.0, "sell": float(self.last.mbon_sell.mean()) if self.last.mbon_sell.size else 0.0, "kc_preview": preview}
+        return {"buy_shift": buy_shift, "sell_shift": sell_shift, "kc_preview": preview}
 
-    def reset_memory(self) -> None:
-        self.w_buy = self.w_buy0.copy()
-        self.w_sell = self.w_sell0.copy()
-        self.eligibility[:] = 0
+    def dump(self) -> dict:
+        return {
+            "name": self.name,
+            "pn_to_kc": self.pn_to_kc.tolist(),
+            "kc_bias": self.kc_bias.tolist(),
+            "w_buy0": self.w_buy0.tolist(),
+            "w_sell0": self.w_sell0.tolist(),
+            "w_buy": self.w_buy.tolist(),
+            "w_sell": self.w_sell.tolist(),
+            "eligibility": self.eligibility.tolist(),
+        }
+
+    def load(self, payload: dict) -> None:
+        if "pn_to_kc" in payload:
+            self.pn_to_kc = np.asarray(payload["pn_to_kc"], dtype=np.float64)
+        if "kc_bias" in payload:
+            self.kc_bias = np.asarray(payload["kc_bias"], dtype=np.float64)
+        if "w_buy0" in payload:
+            self.w_buy0 = np.asarray(payload["w_buy0"], dtype=np.float64)
+        if "w_sell0" in payload:
+            self.w_sell0 = np.asarray(payload["w_sell0"], dtype=np.float64)
+        self.w_buy = np.asarray(payload["w_buy"], dtype=np.float64)
+        self.w_sell = np.asarray(payload["w_sell"], dtype=np.float64)
+        if "eligibility" in payload:
+            self.eligibility = np.asarray(payload["eligibility"], dtype=np.float64)
 
     def _decay_and_clip(self) -> None:
         s = self.settings
