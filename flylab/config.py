@@ -30,8 +30,8 @@ class Settings:
     eligibility_decay: float = 0.25
     decoder_threshold: float = 0.02
     decoder_hysteresis: float = 0.01
-    n_flies: int = 2
-    colony: str = "agree"
+    n_flies: int = 1
+    colony: str = "solo"
     clone_weights: bool = False
     partner_channel: bool = True
     world: str = "market"
@@ -48,6 +48,7 @@ class Settings:
     steps: int = 0
     fast: bool = False
     load_memory: str = ""
+    explore: float = 0.15
 
     def signature(self) -> dict[str, Any]:
         return asdict(self)
